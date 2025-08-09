@@ -1,47 +1,61 @@
+# backend/app/services/scraper.py
+
 import requests
 from bs4 import BeautifulSoup
-from typing import Optional, List, Dict
-import urllib.parse
+from typing import List, Dict
+from datetime import datetime
 
-BASE_URL = "https://www.indeed.com/jobs"
+def scrape_indeed(keyword: str, location: str, max_results: int = 10) -> List[Dict]:
+    """
+    Scrapes Indeed for job postings.
+    
+    Args:
+        keyword (str): Search keyword (e.g., 'Python Developer')
+        location (str): Job location
+        max_results (int): Maximum number of jobs to scrape
 
-def scrape_jobs(keyword: str, location: Optional[str] = None, max_results: int = 10) -> List[Dict]:
+    Returns:
+        List[Dict]: A list of job data dictionaries
     """
-    Scrapes job listings from Indeed based on a keyword and optional location.
-    Returns a list of dictionaries containing job details.
-    """
+
     jobs = []
-    query_params = {
-        "q": keyword,
-        "l": location or "",
-        "limit": max_results
-    }
-    search_url = f"{BASE_URL}?{urllib.parse.urlencode(query_params)}"
-    
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                      "AppleWebKit/537.36 (KHTML, like Gecko) "
-                      "Chrome/115.0.0.0 Safari/537.36"
-    }
-    
-    response = requests.get(search_url, headers=headers, timeout=10)
-    response.raise_for_status()
-    soup = BeautifulSoup(response.text, "html.parser")
+    base_url = "https://www.indeed.com/jobs"
+    params = {"q": keyword, "l": location, "limit": 10}
 
-    for card in soup.find_all("div", class_="job_seen_beacon")[:max_results]:
-        title_elem = card.find("h2", class_="jobTitle")
-        company_elem = card.find("span", class_="companyName")
-        location_elem = card.find("div", class_="companyLocation")
-        summary_elem = card.find("div", class_="job-snippet")
-        link_elem = title_elem.find("a") if title_elem else None
+    try:
+        response = requests.get(base_url, params=params, timeout=10)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, "html.parser")
 
-        job_data = {
-            "title": title_elem.get_text(strip=True) if title_elem else "N/A",
-            "company": company_elem.get_text(strip=True) if company_elem else "N/A",
-            "location": location_elem.get_text(strip=True) if location_elem else "N/A",
-            "summary": summary_elem.get_text(strip=True) if summary_elem else "N/A",
-            "link": f"https://www.indeed.com{link_elem['href']}" if link_elem and link_elem.has_attr("href") else None
-        }
-        jobs.append(job_data)
+        for job_card in soup.select(".result")[:max_results]:
+            title_elem = job_card.select_one(".jobTitle span")
+            company_elem = job_card.select_one(".companyName")
+            location_elem = job_card.select_one(".companyLocation")
+            description_elem = job_card.select_one(".job-snippet")
+            date_elem = job_card.select_one(".date")
+
+            job = {
+                "title": title_elem.get_text(strip=True) if title_elem else "No Title",
+                "company": company_elem.get_text(strip=True) if company_elem else "Unknown Company",
+                "location": location_elem.get_text(strip=True) if location_elem else "Not Specified",
+                "description": description_elem.get_text(strip=True) if description_elem else "",
+                "date_posted": date_elem.get_text(strip=True) if date_elem else datetime.today().strftime("%Y-%m-%d"),
+            }
+            jobs.append(job)
+
+    except Exception as e:
+        print(f"Error scraping Indeed: {e}")
 
     return jobs
+
+def scrape_all(keyword: str, location: str, max_results: int = 10) -> List[Dict]:
+    """
+    Aggregates job results from multiple scrapers.
+    Currently supports only Indeed.
+    """
+    all_jobs = []
+    indeed_jobs = scrape_indeed(keyword, location, max_results)
+    all_jobs.extend(indeed_jobs)
+
+    # Placeholder for future scrapers (LinkedIn, Glassdoor, etc.)
+    return all_jobs
