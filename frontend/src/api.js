@@ -1,29 +1,93 @@
-// frontend/src/api.js
+// frontend/src/App.js
+import React, { useEffect, useState } from "react";
+import { fetchJobs, addJob, generateCoverLetter } from "./api";
+import "./App.css";
 
-const API_BASE = "http://localhost:8000/api"; // Update if deploying
+function App() {
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedJob, setSelectedJob] = useState(null);
+  const [coverLetter, setCoverLetter] = useState("");
+  const [applicantName, setApplicantName] = useState("");
+  const [skills, setSkills] = useState("");
 
-export async function fetchJobs() {
-  const res = await fetch(`${API_BASE}/jobs`);
-  if (!res.ok) throw new Error("Failed to fetch jobs");
-  return res.json();
+  useEffect(() => {
+    loadJobs();
+  }, []);
+
+  async function loadJobs() {
+    setLoading(true);
+    try {
+      const data = await fetchJobs();
+      setJobs(data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleGenerateCoverLetter(job) {
+    if (!applicantName || !skills) {
+      alert("Please enter your name and skills first.");
+      return;
+    }
+    setSelectedJob(job);
+    setLoading(true);
+    try {
+      const result = await generateCoverLetter(job, applicantName, skills);
+      setCoverLetter(result.cover_letter || result);
+    } catch (error) {
+      console.error(error);
+      alert("Error generating cover letter.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="App">
+      <h1>ApplyMate — Job Application Tracker</h1>
+
+      <div className="input-section">
+        <input
+          type="text"
+          placeholder="Your Name"
+          value={applicantName}
+          onChange={(e) => setApplicantName(e.target.value)}
+        />
+        <input
+          type="text"
+          placeholder="Your Skills (comma separated)"
+          value={skills}
+          onChange={(e) => setSkills(e.target.value)}
+        />
+      </div>
+
+      {loading && <p>Loading...</p>}
+
+      <h2>Available Jobs</h2>
+      <ul className="job-list">
+        {jobs.map((job) => (
+          <li key={job.id} className="job-item">
+            <strong>{job.title}</strong> — {job.company} ({job.location})
+            <div>
+              <button onClick={() => handleGenerateCoverLetter(job)}>
+                Generate Cover Letter
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      {selectedJob && coverLetter && (
+        <div className="cover-letter-section">
+          <h3>Cover Letter for {selectedJob.title}</h3>
+          <pre>{coverLetter}</pre>
+        </div>
+      )}
+    </div>
+  );
 }
 
-export async function addJob(job) {
-  const res = await fetch(`${API_BASE}/jobs`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(job),
-  });
-  if (!res.ok) throw new Error("Failed to save job");
-  return res.json();
-}
-
-export async function generateCoverLetter(job, applicantName, skills) {
-  const res = await fetch(`${API_BASE}/cover-letter/generate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ job, applicant_name: applicantName, skills }),
-  });
-  if (!res.ok) throw new Error("Failed to generate cover letter");
-  return res.json();
-}
+export default App;
