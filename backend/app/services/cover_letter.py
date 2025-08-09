@@ -1,49 +1,59 @@
+# backend/app/services/cover_letter.py
+
 import os
-import openai
-from typing import Dict
+from openai import OpenAI
+from dotenv import load_dotenv
 
-# Load API key from environment variable
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# Load environment variables from .env
+load_dotenv()
 
-def generate_cover_letter(job: Dict, applicant_name: str, skills: str) -> str:
+# Initialize OpenAI client
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+def generate_cover_letter(job, applicant_name: str, skills: str) -> str:
     """
-    Generates a tailored cover letter using OpenAI GPT models.
+    Generates a tailored cover letter for a given job and applicant info.
     
     Args:
-        job (Dict): Job dictionary containing title, company, location, summary.
-        applicant_name (str): Applicant's full name.
-        skills (str): Comma-separated skills.
-
+        job (dict): Job details (title, company, description, etc.)
+        applicant_name (str): Name of the applicant
+        skills (str): Comma-separated skills of the applicant
+    
     Returns:
-        str: Generated cover letter text.
+        str: A professional cover letter
     """
-    if not openai.api_key:
-        raise ValueError("OpenAI API key not found. Please set OPENAI_API_KEY environment variable.")
+    
+    if not job.get("title") or not job.get("company"):
+        raise ValueError("Job must have a title and company.")
 
     prompt = f"""
-You are a professional career assistant.
-Write a personalized, formal cover letter for the following job.
-Highlight how the applicant's skills align with the job description.
+    Write a professional, tailored cover letter for the following job posting.
+    Include the applicant's name and highlight their relevant skills.
 
-Job Title: {job.get('title', 'N/A')}
-Company: {job.get('company', 'N/A')}
-Location: {job.get('location', 'N/A')}
-Job Summary: {job.get('summary', 'N/A')}
+    Applicant Name: {applicant_name}
+    Skills: {skills}
 
-Applicant Name: {applicant_name}
-Applicant Skills: {skills}
+    Job Title: {job.get("title")}
+    Company: {job.get("company")}
+    Job Description: {job.get("description", "No description provided.")}
+    Location: {job.get("location", "Not specified")}
 
-Tone: Professional, confident, and concise.
-"""
+    The tone should be professional yet enthusiastic, and the length should be about 250-300 words.
+    End with a polite call-to-action.
+    """
 
-    response = openai.ChatCompletion.create(
-        model="gpt-4o-mini",  # Fast, cost-effective GPT model
-        messages=[
-            {"role": "system", "content": "You are a professional career coach and expert cover letter writer."},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.7,
-        max_tokens=600
-    )
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a professional career coach and cover letter writer."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7,
+            max_tokens=500
+        )
 
-    return response["choices"][0]["message"]["content"].strip()
+        return response.choices[0].message.content.strip()
+
+    except Exception as e:
+        raise RuntimeError(f"OpenAI API error: {str(e)}")
