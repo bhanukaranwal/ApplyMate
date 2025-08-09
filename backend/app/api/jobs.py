@@ -1,34 +1,42 @@
-from fastapi import APIRouter, Depends
-from typing import List
-from ..scrapers.example_jobsite import ExampleJobSiteScraper
-from ..db import get_session
-from ..models import JobPost
+from fastapi import APIRouter, Query, HTTPException
+from typing import Optional
+from app.services.scraper import scrape_jobs
+from app.db import save_job, get_all_jobs
 
-router = APIRouter(prefix="/api/jobs", tags=["jobs"])
+router = APIRouter()
 
-@router.post('/scrape')
-async def scrape_jobs(url: str):
-    scraper = ExampleJobSiteScraper(url)
-    jobs = scraper.scrape()
-    # persist unique jobs
-    inserted = 0
-    from sqlmodel import select
-    with next(get_session()) as session:
-        for j in jobs:
-            stmt = select(JobPost).where(JobPost.url == j['url'])
-            if not session.exec(stmt).first():
-                jp = JobPost(title=j['title'], company=j['company'], url=j['url'], description=j['description'], location=j.get('location'))
-                session.add(jp)
-                inserted += 1
-        session.commit()
-    return {"inserted": inserted}
+@router.get("/", summary="List all saved job applications")
+def list_saved_jobs():
+    """
+    Returns all jobs saved in the database.
+    """
+    try:
+        return {"jobs": get_all_jobs()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-@router.get('/')
-async def list_jobs(q: str = None):
-    from sqlmodel import select
-    with next(get_session()) as session:
-        stmt = select(JobPost)
-        if q:
-            stmt = select(JobPost).where(JobPost.title.contains(q) | JobPost.description.contains(q))
-        rows = session.exec(stmt).all()
-        return rows
+@router.get("/search", summary="Search jobs online")
+def search_jobs(
+    keyword: str = Query(..., description="Keyword for job search, e.g., 'Python Developer'"),
+    location: Optional[str] = Query(None, description="Location for job search, e.g., 'New York'"),
+    max_results: int = Query(10, ge=1, le=50, description="Maximum jobs to fetch")
+):
+    """
+    Scrapes jobs from online job boards based on keyword and location.
+    """
+    try:
+        jobs = scrape_jobs(keyword, location, max_results)
+        return {"results": jobs}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/save", summary="Save a job application")
+def save_job_entry(job: dict):
+    """
+    Saves a job entry to the database.
+    """
+    try:
+        result = save_job(job)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
