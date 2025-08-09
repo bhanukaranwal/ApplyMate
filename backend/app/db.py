@@ -1,11 +1,12 @@
 import sqlite3
-import os
 from typing import List, Dict
 
-DB_FILE = os.path.join(os.path.dirname(__file__), "applymate.db")
+DB_FILE = "jobs.db"
 
 def init_db():
-    """Initialize the database and create the jobs table if it doesn't exist."""
+    """
+    Initializes the SQLite database and creates the jobs table if it doesn't exist.
+    """
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute("""
@@ -14,52 +15,59 @@ def init_db():
             title TEXT,
             company TEXT,
             location TEXT,
-            link TEXT,
-            notes TEXT,
-            date_applied TEXT
+            summary TEXT,
+            link TEXT UNIQUE
         )
     """)
     conn.commit()
     conn.close()
 
-def save_job(job: Dict):
-    """Save a new job application."""
+def save_job(job: Dict) -> Dict:
+    """
+    Saves a job entry to the database.
+    Ignores duplicates based on the job link.
+    """
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO jobs (title, company, location, link, notes, date_applied)
-        VALUES (?, ?, ?, ?, ?, date('now'))
-    """, (
-        job.get("title"),
-        job.get("company"),
-        job.get("location"),
-        job.get("link"),
-        job.get("notes", "")
-    ))
-    conn.commit()
-    conn.close()
-    return {"status": "success", "message": "Job saved successfully."}
+    
+    try:
+        cursor.execute("""
+            INSERT INTO jobs (title, company, location, summary, link)
+            VALUES (?, ?, ?, ?, ?)
+        """, (
+            job.get("title"),
+            job.get("company"),
+            job.get("location"),
+            job.get("summary"),
+            job.get("link")
+        ))
+        conn.commit()
+        return {"status": "success", "message": "Job saved successfully."}
+    except sqlite3.IntegrityError:
+        return {"status": "error", "message": "Job already exists in the database."}
+    finally:
+        conn.close()
 
 def get_all_jobs() -> List[Dict]:
-    """Fetch all saved job applications."""
+    """
+    Fetches all jobs from the database.
+    """
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
-    cursor.execute("SELECT id, title, company, location, link, notes, date_applied FROM jobs")
+    cursor.execute("SELECT title, company, location, summary, link FROM jobs")
     rows = cursor.fetchall()
     conn.close()
-
+    
     jobs = []
     for row in rows:
         jobs.append({
-            "id": row[0],
-            "title": row[1],
-            "company": row[2],
-            "location": row[3],
-            "link": row[4],
-            "notes": row[5],
-            "date_applied": row[6]
+            "title": row[0],
+            "company": row[1],
+            "location": row[2],
+            "summary": row[3],
+            "link": row[4]
         })
     return jobs
 
-# Initialize DB on import
+# Run this when the module is imported to ensure DB is ready
 init_db()
