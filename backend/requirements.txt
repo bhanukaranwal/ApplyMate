@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+httpx
+requests
+beautifulsoup4
+sqlmodel
+python-dotenv
+openai
+apscheduler
+pytest
+pytest-asyncio
