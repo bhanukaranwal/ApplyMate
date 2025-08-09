@@ -1,130 +1,80 @@
 /* frontend/src/App.css */
 
-/* Root theme variables */
-:root {
-  --bg-color: #f4f4f4;
-  --text-color: #222;
-  --card-bg: #fff;
-  --primary-color: #4cafef;
-  --secondary-color: #333;
-  --border-radius: 10px;
-}
-
-/* Dark mode override */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg-color: #1e1e1e;
-    --text-color: #f0f0f0;
-    --card-bg: #2a2a2a;
-    --primary-color: #66b3ff;
-    --secondary-color: #ddd;
-  }
-}
-
 body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
   margin: 0;
-  font-family: 'Segoe UI', Roboto, sans-serif;
-  background-color: var(--bg-color);
-  color: var(--text-color);
+  padding: 0;
+  color: #333;
 }
 
-/* Container */
-.app-container {
+.App {
   max-width: 900px;
   margin: auto;
-  padding: 2rem;
+  padding: 20px;
 }
 
-/* Headings */
-h1, h2, h3 {
-  color: var(--primary-color);
-  font-weight: 600;
+h1 {
+  text-align: center;
+  color: #2c3e50;
 }
 
-/* Applicant Info Section */
-.applicant-info {
+.input-section {
   display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
   gap: 10px;
-  margin-bottom: 1.5rem;
 }
 
-.applicant-info input {
-  flex: 1;
-  padding: 0.6rem;
+input {
+  padding: 10px;
+  border-radius: 6px;
   border: 1px solid #ccc;
-  border-radius: var(--border-radius);
+  font-size: 14px;
 }
 
-/* Form */
-.job-form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 2rem;
-}
-
-.job-form input, .job-form textarea {
-  padding: 0.6rem;
-  border: 1px solid #ccc;
-  border-radius: var(--border-radius);
-}
-
-.job-form button {
-  background-color: var(--primary-color);
+button {
+  background-color: #3498db;
   color: white;
-  padding: 0.8rem;
   border: none;
-  border-radius: var(--border-radius);
+  padding: 8px 12px;
+  border-radius: 6px;
   cursor: pointer;
-  font-weight: 500;
-  transition: background 0.2s;
+  transition: background-color 0.3s;
 }
 
-.job-form button:hover {
-  background-color: #3a9cd6;
+button:hover {
+  background-color: #2980b9;
 }
 
-/* Job List */
 .job-list {
-  display: grid;
-  gap: 1.5rem;
+  list-style: none;
+  padding: 0;
 }
 
-.job-card {
-  background-color: var(--card-bg);
-  padding: 1.5rem;
-  border-radius: var(--border-radius);
-  box-shadow: 0px 4px 10px rgba(0,0,0,0.08);
+.job-item {
+  background: white;
+  padding: 15px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
-.job-card h3 {
-  margin-top: 0;
+.job-item strong {
+  color: #34495e;
 }
 
-.job-card button {
-  background-color: var(--primary-color);
-  color: white;
-  padding: 0.6rem 1.2rem;
-  border: none;
-  border-radius: var(--border-radius);
-  cursor: pointer;
+.cover-letter-section {
+  margin-top: 30px;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
-.job-card button:hover {
-  background-color: #3a9cd6;
-}
-
-/* Cover Letter Output */
-.cover-letter {
-  margin-top: 2rem;
-  background-color: var(--card-bg);
-  padding: 1.5rem;
-  border-radius: var(--border-radius);
-}
-
-.cover-letter pre {
+pre {
   white-space: pre-wrap;
   word-wrap: break-word;
-  font-family: inherit;
-  color: var(--secondary-color);
+  font-size: 14px;
+  color: #2c3e50;
 }
